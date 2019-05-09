@@ -1,0 +1,521 @@
+#Code for ADN social network analysis for the Palmas meeting
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(viridis)
+
+install.packages("network")
+install.packages("statnet")
+install.packages("sna")
+install.packages("numDeriv")
+
+library(network)
+library(statnet)
+library(sna)
+library(numDeriv)
+
+#read in data
+init.dat <- read.csv("../Data/ADNPalmasSurveyEdited.csv")
+atts <- read.csv("../Data/ADNPalmasAtts.csv")
+
+init.dat.activities<-init.dat %>% 
+  mutate(ADNActivities=strsplit(as.character(ADNActivities),",")) %>% 
+  unnest(ADNActivities)
+
+init.dat.activities$ADNActivities<-as.factor(init.dat.activities$ADNActivities)
+init.dat.activities$ADNActivities[init.dat.activities$ADNActivities=="Coopi Ã¢â‚¬â€œ CooperaÃƒÂ§ÃƒÂ£o Internacional Program"]<-"Coopi"
+init.dat.activities$ADNActivities[init.dat.activities$ADNActivities=="PrÃƒÂ³-AmazÃƒÂ´nia Program"]<-"Pro-Amazonia Program"
+init.dat.activities$ADNActivities[init.dat.activities$ADNActivities=="Coopi "]<-"Coopi"
+init.dat.activities$ADNActivities[init.dat.activities$ADNActivities=="Science without Borders Ã¢â‚¬â€œ Biodiversity and Indigenous Peoples (PVE)"]<-"Science without Borders - Biodiversity and Indigenous Peoples (PVE)"
+init.dat.activities$ADNActivities[init.dat.activities$ADNActivities=="Science without Borders "]<-"Science without Borders - Biodiversity and Indigenous Peoples (PVE)"
+init.dat.activities$ADNActivities[init.dat.activities$ADNActivities=="Science without Borders"]<-"Science without Borders - Biodiversity and Indigenous Peoples (PVE)"
+init.dat.activities$ADNActivities[init.dat.activities$ADNActivities=="Amazon Dams Network Email Listserv Florida"]<-"Amazon Dams Network Email Listserv"
+init.dat.activities$ADNActivities[init.dat.activities$ADNActivities=="AND Conferences/Symposia in Brazil"]<-"ADN Conferences/Symposia in Brazil"
+
+init.dat.unique<-init.dat.activities[!duplicated(init.dat.activities$First_Name),]
+
+init.dat.sex<-filter(init.dat.unique, Gender != "")
+init.dat.sex$Gender<-as.character(init.dat.sex$Gender)
+init.dat.sex$Gender[init.dat.sex$Gender=="Prefer to self-describe"]<-"Self-describe"
+init.dat.sex$Gender<-as.factor(init.dat.sex$Gender)
+ggplot(init.dat.sex, aes(x=Gender))+
+  geom_bar(width=0.25)+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  labs(x="",y="Total")+
+  theme_classic()+
+  theme(aspect.ratio=2/1)
+
+##Matching all country responses
+init.dat.unique$Country[init.dat.unique$Country=="BR"]<-"Brazil"
+init.dat.unique$Country[init.dat.unique$Country=="Brasil"]<-"Brazil"
+init.dat.unique$Country[init.dat.unique$Country=="Estados Unidos"]<-"United States"
+init.dat.unique$Country[init.dat.unique$Country=="U.S.A."]<-"United States"
+init.dat.unique$Country[init.dat.unique$Country=="USA"]<-"United States"
+
+init.dat.country<-filter(init.dat.unique,Country!="")
+ggplot(init.dat.country, aes(x=Country))+
+  geom_bar(width=0.25)+
+  theme_classic()+
+  theme(aspect.ratio=2/1)+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  labs(x="",y="Total")
+
+##Additional plots
+init.dat.occ<-filter(init.dat, Occupation != "")
+init.dat.occ$Occupation<-factor(init.dat.occ$Occupation,c("Community leader / representative","Academic faculty",
+                                                          "Government employee", "NGO practitioner",
+                                                          "Private sector","Undegraduate student",
+                                                          "Graduate student","Other"))
+ggplot(init.dat.occ, aes(x=Occupation, fill=Occupation))+
+  geom_bar()+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  theme_classic()+
+  scale_fill_viridis_d(labels=c("Community leader","Academic faculty",
+                                "Government employee","NGO practicioner","Private sector",
+                                "Undergraduate student","Graduate student","Other"))+
+  labs(x="",y="Total")+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x =element_blank(), 
+        legend.title=element_blank())
+
+init.dat.ed<-filter(init.dat.unique,Education !="")
+init.dat.ed$Education<-factor(init.dat.ed$Education, c("Some post-secondary education (undergraduate)",
+                                                       "Completed post-secondary education (undergraduate)",
+                                                       "Master's", "Some Doctoral","Doctoral","Other (please specify)"))
+ggplot(init.dat.ed,aes(x=Education, fill=Education))+
+  geom_bar()+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  theme_classic()+
+  scale_fill_viridis_d(labels=c("Some undergraduate","Bachelor's","Master's","Some doctoral","Doctoral","Other"))+
+  labs(x="",y="Total")+
+  theme_classic()+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x =element_blank(), 
+        legend.title=element_blank())
+
+init.dat.small <- filter(init.dat.unique, Disciplinary_Category != "")
+init.dat.small$Disciplinary_Category[init.dat.small$Disciplinary_Category=="Environmental sciences"]<-"Environmental Sciences"
+ggplot(init.dat.small,aes(x=Disciplinary_Category, fill=Disciplinary_Category))+
+  geom_bar()+
+  scale_fill_viridis_d()+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  labs(x="",y="Total")+
+  theme_classic()+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x =element_blank(), 
+        legend.title=element_blank())
+
+init.dat.dams<-filter(init.dat,Interest_in_Dams !="")
+ggplot(init.dat.dams,aes(x=Interest_in_Dams, fill=Interest_in_Dams))+
+  geom_bar()+
+  scale_fill_viridis_d()+
+  labs(x="",y="Total")+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  theme_classic()+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x =element_blank(), 
+        legend.title=element_blank())
+
+init.dat.rivers <- filter(init.dat,River_Basins != "")
+init.dat.rivers$River_Basins[init.dat.rivers$River_Basins=="I have not yet worked on dam-related research."]<-NA
+init.dat.rivers$River_Basins[init.dat.rivers$River_Basins=="I have not yet worked on dam-related research"]<-NA
+init.dat.rivers$River_Basins[init.dat.rivers$River_Basins=="Parana River (Brazil) "]<-"Parana River (Brazil)"
+init.dat.rivers$River_Basins[init.dat.rivers$River_Basins=="Tocantis River (Brazil)"]<-"Tocantins River (Brazil)"
+init.dat.rivers$River_Basins[init.dat.rivers$River_Basins=="Braco River (Brazil)"]<-"Branco River (Brazil)"
+
+init.dat.rivers$River_Basins <- as.factor(init.dat.rivers$River_Basins)
+ggplot(init.dat.rivers,aes(x=River_Basins, fill=River_Basins))+
+  geom_bar()+
+  scale_fill_viridis_d()+
+  labs(x="",y="Total")+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  theme_classic()+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x =element_blank(), 
+        legend.title=element_blank())
+
+
+init.dat.activities <- filter(init.dat.activities, ADNActivities != "")
+ggplot(init.dat.activities,aes(x=ADNActivities, fill=ADNActivities))+
+  geom_bar()+
+  scale_fill_viridis_d()+
+  labs(x="",y="Total")+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  theme_classic()+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x =element_blank(), 
+        legend.title=element_blank())
+
+names(init.dat.activities)
+
+init.dat.unique<-init.dat.activities[!duplicated(init.dat.activities$First_Name),]
+
+init.dat.prof<-init.dat.unique %>% 
+  select(Engage.with.other.researchers.internationally, Information.about.dams,
+         Opportunity.to.learn.from.other.perspective,Access.to.funding.opportunities,
+         Community.of.practice, Learn.from.US.experience.with.hydropower,
+         Professional.Development.Other) 
+
+lev<-c("Strongly Disagree","Somewhat Disagree", "Neither Agree nor Disagree",
+       "Somewhat Agree", "Strongly Agree","")  
+
+init.dat.prof[1:7]<-lapply(init.dat.prof[1:7],factor,levels=lev)
+
+init.dat.prof.long <- init.dat.prof %>% 
+  gather() %>% 
+  filter(value !="")
+
+
+init.dat.prof.long$value<-factor(init.dat.prof.long$value,levels = lev)
+
+init.dat.prof.count <- init.dat.prof.long %>% 
+  group_by(key,value) %>% 
+  summarize(count=n()) %>% 
+  ungroup()
+
+init.dat.prof.count$key[init.dat.prof.count$key=="Professional.Development.Other"]<-"Other"
+init.dat.prof.count$key[init.dat.prof.count$key=="Opportunity.to.learn.from.other.perspective"]<-"Opportunities to learn from other perspectives"
+init.dat.prof.count$key[init.dat.prof.count$key=="Learn.from.US.experience.with.hydropower"]<-"Learn from US experience with hydropower"
+init.dat.prof.count$key[init.dat.prof.count$key=="Information.about.dams"]<-"Access to information about Amazon dams"
+init.dat.prof.count$key[init.dat.prof.count$key=="Engage.with.other.researchers.internationally"]<-"Engage with other researchers nationally and internationally"
+init.dat.prof.count$key[init.dat.prof.count$key=="Community.of.practice"]<-"Community of practice"
+init.dat.prof.count$key[init.dat.prof.count$key=="Access.to.funding.opportunities"]<-"Access to research and funding opportunities"
+
+init.dat.prof.count$key<-as.factor(init.dat.prof.count$key)
+
+init.dat.prof.count<-init.dat.prof.count %>% 
+  mutate(key = fct_relevel(key, "Other","Opportunities to learn from other perspectives",
+                           "Learn from US experience with hydropower",
+                           "Engage with other researchers nationally and internationally",
+                           "Community of practice", "Access to research and funding opportunities",
+                           "Access to information about Amazon dams"))
+
+ggplot(init.dat.prof.count,aes(y=count, x=key, fill=value))+
+  geom_bar(position="fill",stat="identity")+
+  geom_text(aes(label=count), position=position_fill(vjust=0.5),color="white")+
+  scale_fill_manual(values=c("#FDE725FF","#55C667FF","#238A8DFF","#404788FF","#440154FF"))+
+  coord_flip()+
+  theme_classic()+
+  labs(x="",y="")+
+  theme(axis.text.x =element_blank(),
+        axis.ticks.x=element_blank(),
+        legend.title=element_blank(),
+        axis.text.y=element_text(size=12))
+
+
+
+init.dat.boxplot <- init.dat.unique %>% 
+  select(Learning.modules, Webinar.series, Research.proposals, Peer.reviewed.publications, 
+         Conference.and.Symposia.planning.and.organization, Non.academic.materials.for.local.communities,
+         Workshop.development.and.implementation, Technical.reports) %>% 
+  gather() %>%
+  na.omit %>% 
+  mutate(key = fct_reorder(key, value))
+
+init.dat.boxplot$key<-as.factor(init.dat.boxplot$key)
+
+ggplot(init.dat.boxplot, aes(x=key, y=value, fill=key))+
+  geom_boxplot()+
+  scale_fill_viridis_d(labels=c("Peer-reviewed publications",
+                                "Research proposals",
+                                "Learning modules",
+                                "Non-academic materials for local communities",
+                                 "Conference and symposial planning and organization",
+                                 "Webinar series",
+                                 "Workshop development and implementation",
+                                 "Technical reports"))+
+  labs(x="ADN products", y="Ranking")+
+  theme_classic()+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x =element_blank(), 
+        legend.title=element_blank())
+
+
+init.dat.collab <- init.dat.unique %>% 
+  select(Collaboriation.Groups) %>% 
+  mutate(Collaboriation.Groups=strsplit(as.character(Collaboriation.Groups),",")) %>% 
+  unnest(Collaboriation.Groups)
+
+init.dat.collab$Collaboriation.Groups[init.dat.collab$Collaboriation.Groups==" anglers"]<-""
+init.dat.collab$Collaboriation.Groups[init.dat.collab$Collaboriation.Groups==" etc)"]<-""
+init.dat.collab$Collaboriation.Groups[init.dat.collab$Collaboriation.Groups==" hunters"]<-"" 
+init.dat.collab$Collaboriation.Groups[init.dat.collab$Collaboriation.Groups==" hunters etc.)"]<-""
+init.dat.collab$Collaboriation.Groups[init.dat.collab$Collaboriation.Groups=="Rural workersÃ¢â‚¬â„¢ unions"]<-"Rural workers' unions"
+init.dat.collab$Collaboriation.Groups[init.dat.collab$Collaboriation.Groups=="Resource recreation user groups (boaters"]<-"Resource recreation user groups (boaters, anglers, hunters, etc.)"
+init.dat.collab$Collaboriation.Groups[init.dat.collab$Collaboriation.Groups=="Direct contact with community inhabitatnts"]<-"Direct contact with community inhabitants"
+init.dat.collab$Collaboriation.Groups[init.dat.collab$Collaboriation.Groups=="Other (please add in the text box"]<-"Other"
+
+init.dat.collab$Collaboriation.Groups<-as.factor(init.dat.collab$Collaboriation.Groups)
+init.dat.collab<-filter(init.dat.collab,Collaboriation.Groups!="")
+
+init.dat.collab %>% count(Collaboriation.Groups,sort=TRUE)
+
+ggplot(init.dat.collab, aes(x=Collaboriation.Groups, fill=Collaboriation.Groups))+
+  geom_bar()+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  scale_fill_viridis_d()+
+  labs(x="Dam-related research and collaboration", y="Total")+
+  theme_classic()+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x =element_blank(), 
+        legend.title=element_blank())
+
+init.dat.ids<-init.dat.unique %>% 
+  select(More.Productive.Working.on.my.Own,Research.doesn.t.need.collaboration.from.other.disciplines,
+         Integrate.methods.from.other.disciplines, Integrate.theories.and.models.from.other.disciplines) 
+
+lev<-c("Strongly Disagree","Somewhat Disagree", "Neither Agree nor Disagree",
+       "Somewhat Agree", "Strongly Agree","")  
+
+init.dat.ids[1:4]<-lapply(init.dat.ids[1:4],factor,levels=lev)
+
+init.dat.ids.long <- init.dat.ids %>% 
+  gather() %>% 
+  filter(value !="")
+
+
+init.dat.ids.long$value<-factor(init.dat.ids.long$value,levels = lev)
+
+init.dat.ids.count <- init.dat.ids.long %>% 
+  group_by(key,value) %>% 
+  summarize(count=n()) %>% 
+  ungroup()
+
+init.dat.ids.count$key[init.dat.ids.count$key=="More.Productive.Working.on.my.Own"]<-"I am more productive working on my own vs in groups"
+init.dat.ids.count$key[init.dat.ids.count$key=="Research.doesn.t.need.collaboration.from.other.disciplines"]<-"My research doesn't warrant collaboration with other disciplines"
+init.dat.ids.count$key[init.dat.ids.count$key=="Integrate.methods.from.other.disciplines"]<-"I integrate methods from other disciplines"
+init.dat.ids.count$key[init.dat.ids.count$key=="Integrate.theories.and.models.from.other.disciplines"]<-"I integrate theories and models from other disciplines"
+
+init.dat.ids.count$key<-as.factor(init.dat.ids.count$key)
+init.dat.ids.count<-init.dat.ids.count %>% 
+  mutate(key = fct_relevel(key, "I am more productive working on my own vs in groups",
+                           "My research doesn't warrant collaboration with other disciplines",
+                           "I integrate methods from other disciplines",
+                           "I integrate theories and models from other disciplines"))
+
+ggplot(init.dat.ids.count,aes(y=count, x=key, fill=value))+
+  geom_bar(position="fill",stat="identity")+
+  geom_text(aes(label=count), position=position_fill(vjust=0.5),color="white")+
+  scale_fill_manual(values=c("#FDE725FF","#55C667FF","#238A8DFF","#404788FF","#440154FF"))+
+  coord_flip()+
+  theme_classic()+
+  labs(x="",y="")+
+  theme(axis.text.x =element_blank(),
+        axis.ticks.x=element_blank(),
+        legend.title=element_blank(),
+        axis.text.y=element_text(size=14),
+        legend.text = element_text(size=14))
+
+
+
+init.dat.mult <- filter(init.dat.unique, Engaged.in.Multidisciplinary!="")
+
+ggplot(init.dat.mult, aes(x=Engaged.in.Multidisciplinary))+
+  geom_bar(width=0.25)+
+  stat_count(aes(y=..count.., label=..count..), geom="text", vjust=-.5)+
+  labs(x="Engaged in multidisciplinary work", y="Total")+
+  theme_classic()+
+  theme(aspect.ratio=2/1)
+
+init.dat.int <- filter(init.dat.unique, Engaged.in.interdisciplinary != "")
+
+ggplot(init.dat.int, aes(x=Engaged.in.interdisciplinary))+
+  geom_bar(width=0.25)+
+  stat_count(aes(y=..count..,label=..count..), geom="text", vjust=-.5)+
+  labs(x="Engaged in interdisciplinary work", y="Total")+
+  theme_classic()+
+  theme(aspect.ratio=2/1)
+
+init.dat.trans<-filter(init.dat.unique, Engaged.in.transdisciplinary != "")
+
+ggplot(init.dat.trans, aes(x=Engaged.in.transdisciplinary))+
+  geom_bar(width=0.25)+
+  stat_count(aes(y=..count..,label=..count..), geom="text", vjust=-.5)+
+  labs(x="Engaged in transdisciplinary work", y="Total")+
+  theme_classic()+
+  theme(aspect.ratio = 2/1)
+
+##Expectations for interdisciplinary/team science
+expectations <- init.dat.unique %>% 
+  select(Establishing.clear.expectations,Recognizing.individuals.have.different.roles,
+         Identifying.roles.of.collaborators,Written.understanding.of.roles, Establishing.good.communication,
+         Power.differences,Trusting.relationships,Conflict.resolution.mechanisms,Overcome.language.barriers,
+         Data.protocols,Overcome.disciplinary.barriers) %>% 
+  gather() %>% 
+  na.omit %>% 
+  mutate(key = fct_reorder(key, value))
+
+ggplot(expectations, aes(x=key, y=value,fill=key))+
+  geom_boxplot()+
+  scale_fill_viridis_d(labels=c("Establishing conflict resolution mechanisms", 
+                                "Establishing protocols to share and use data",
+                                "Establishing clear expectations from the beginning",
+                                "Establishing good communication",
+                                "Identifying the roles of research collaborators",
+                                "Establishing mechanisms to overcome the barriers of understanding between disiplinary areas",
+                                "Establishing mechanisms to overcome language barriers",
+                                "Recognizing and accounting for power differences between participants",
+                                "Recognizing individuals have specific and different roles",
+                                "Establishing trusting relationships among participants",
+                                "Developing a written understanding of roles and responsibilities"))+
+  theme_classic()+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.title=element_blank(),
+        legend.text=element_text(size=12))
+
+##Plotting ADN connections
+
+par(mfrow=c(1,1))
+
+######################
+##Dam collaborations##
+######################
+
+#Read an adjacency matrix (R stores it as a data frame by default)
+relations <- read.csv("../Data/ADNPalmasDamCollabOnDams.csv",header=T,stringsAsFactors=FALSE)
+row.names(relations)<-relations[,1]
+relations <- relations[,2:62]
+
+#Here's a case where matrix format is preferred
+relations <- as.matrix(relations) # convert to matrix format
+relations <- ifelse(relations == "Collaborated With On Dam-related Activities", 1,0)
+
+#Read in some vertex attribute data (okay to leave it as a data frame)
+nodeInfo <- read.csv("../Data/ADNPalmasAtts.csv",header=TRUE,stringsAsFactors=FALSE)
+nodeInfo
+
+nrelations<-network(relations,directed=TRUE) # Create a network object based on relations
+nrelations # Get a quick description of the data
+
+summary(nrelations) # Get an overall summary
+network.dyadcount(nrelations) # How many dyads in nflo?
+network.edgecount(nrelations) # How many edges are present?
+network.size(nrelations) # How large is the network?
+as.sociomatrix(nrelations) # Show it as a sociomatrix
+nrelations[,] # Another way to do it
+
+plot(nrelations,displaylabels=F,jitter=F,usearrows=T,displayisolates=T,vertex.col="blue",edge.col="darkgray",main="Collaborated with on dam-realted topics") # Plot with names
+
+##############################
+##Dam-related communications##
+##############################
+
+dam.comm <- read.csv("../Data/ADNPalmasCommDam.csv",header=T,stringsAsFactors=FALSE)
+row.names(dam.comm)<-dam.comm[,1]
+dam.comm <- dam.comm[,2:62]
+
+#Here's a case where matrix format is preferred
+dam.comm <- as.matrix(dam.comm) # convert to matrix format
+dam.comm   <- ifelse(dam.comm == "Communicated With On Dam-related Topics", 1,0)
+dam.comm[is.na(dam.comm)]<-0
+
+#Read in some vertex attribute data (okay to leave it as a data frame)
+nodeInfo <- read.csv("../Data/ADNPalmasAtts.csv",header=TRUE,stringsAsFactors=FALSE)
+nodeInfo
+
+nrelations<-network(dam.comm,directed=TRUE) # Create a network object based on relations
+nrelations # Get a quick description of the data
+
+summary(nrelations) # Get an overall summary
+network.dyadcount(nrelations) # How many dyads in nflo?
+network.edgecount(nrelations) # How many edges are present?
+network.size(nrelations) # How large is the network?
+as.sociomatrix(nrelations) # Show it as a sociomatrix
+nrelations[,] # Another way to do it
+
+plot(nrelations,displaylabels=F,jitter=F,usearrows=T,displayisolates=T,vertex.col="blue",edge.col="darkgray",main="Communicated with on dam-related topics") # Plot with names
+
+
+##########################
+##Non-dam collaborations##
+##########################
+nondam.coll <- read.csv("../Data/ADNPalmasCollabNonDam.csv",header=T,stringsAsFactors=FALSE)
+row.names(nondam.coll)<-nondam.coll[,1]
+nondam.coll <- nondam.coll[,2:62]
+
+#Here's a case where matrix format is preferred
+nondam.coll <- as.matrix(nondam.coll) # convert to matrix format
+nondam.coll <- ifelse(nondam.coll == "Collaborated with on non-dam related activities", 1,0)
+
+#Read in some vertex attribute data (okay to leave it as a data frame)
+nodeInfo <- read.csv("../Data/ADNPalmasAtts.csv",header=TRUE,stringsAsFactors=FALSE)
+nodeInfo
+
+nrelations<-network(nondam.coll,directed=TRUE) # Create a network object based on relations
+nrelations # Get a quick description of the data
+
+summary(nrelations) # Get an overall summary
+network.dyadcount(nrelations) # How many dyads in nflo?
+network.edgecount(nrelations) # How many edges are present?
+network.size(nrelations) # How large is the network?
+as.sociomatrix(nrelations) # Show it as a sociomatrix
+nrelations[,] # Another way to do it
+
+plot(nrelations,displaylabels=F,jitter=F,usearrows=T,displayisolates=T,vertex.col="blue",edge.col="darkgray",main="Collaborated with on non-dam topics") # Plot with names
+
+##########################
+##Non-dam Communications##
+##########################
+#Read an adjacency matrix (R stores it as a data frame by default)
+nondam.comm <- read.csv("../Data/ADNPalmasCommNonDam.csv",header=T,stringsAsFactors=FALSE)
+row.names(nondam.comm)<-nondam.comm[,1]
+nondam.comm <- nondam.comm[,2:62]
+
+#Here's a case where matrix format is preferred
+nondam.comm <- as.matrix(nondam.comm) # convert to matrix format
+nondam.comm <- ifelse(nondam.comm == "Communicated with on non-dam related topics", 1,0)
+
+#Read in some vertex attribute data (okay to leave it as a data frame)
+nodeInfo <- read.csv("../Data/ADNPalmasAtts.csv",header=TRUE,stringsAsFactors=FALSE)
+nodeInfo
+
+###########################################################
+##3.2 Creating network objects, working with edgelists
+
+nrelations<-network(nondam.comm,directed=TRUE) # Create a network object based on relations
+nrelations # Get a quick description of the data
+
+summary(nrelations) # Get an overall summary
+network.dyadcount(nrelations) # How many dyads in nflo?
+network.edgecount(nrelations) # How many edges are present?
+network.size(nrelations) # How large is the network?
+as.sociomatrix(nrelations) # Show it as a sociomatrix
+nrelations[,] # Another way to do it
+
+plot(nrelations,displaylabels=F,jitter=F,usearrows=T,displayisolates=T,vertex.col="blue",edge.col="darkgray",main="Communicated with on non-dam topics") # Plot with names
+
+############
+##Heard of##
+############
+#Read an adjacency matrix (R stores it as a data frame by default)
+heard.of <- read.csv("../Data/ADNPalmasHeardOf.csv",header=T,stringsAsFactors=FALSE)
+row.names(heard.of)<-heard.of[,1]
+heard.of <- heard.of[,2:62]
+
+#Here's a case where matrix format is preferred
+heard.of <- as.matrix(heard.of) # convert to matrix format
+heard.of <- ifelse(heard.of == "Heard of prior to Palmas meeting", 1,0)
+
+#Read in some vertex attribute data (okay to leave it as a data frame)
+nodeInfo <- read.csv("../Data/ADNPalmasAtts.csv",header=TRUE,stringsAsFactors=FALSE)
+nodeInfo
+
+###########################################################
+##3.2 Creating network objects, working with edgelists
+
+nrelations<-network(heard.of,directed=TRUE) # Create a network object based on relations
+nrelations # Get a quick description of the data
+
+summary(nrelations) # Get an overall summary
+network.dyadcount(nrelations) # How many dyads in nflo?
+network.edgecount(nrelations) # How many edges are present?
+network.size(nrelations) # How large is the network?
+as.sociomatrix(nrelations) # Show it as a sociomatrix
+nrelations[,] # Another way to do it
+
+plot(nrelations,displaylabels=F,jitter=F,usearrows=T,displayisolates=F,vertex.col="blue",edge.col="darkgray",main="Heard of prior to Palmas") # Plot with names
+

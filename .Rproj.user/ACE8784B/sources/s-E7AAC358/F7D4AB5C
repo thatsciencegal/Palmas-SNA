@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1555284373977.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F7D4AB5C",
+    "lastKnownWriteTime" : 19140500287651951,
+    "last_content_update" : 1555284373977,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "id" : "838d0cd2ac274919b2ac0eba25b4a40f",
+        "name" : "init.dat.comm",
+        "title" : "init.dat.comm"
+    },
+    "relative_order" : 11,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "object_explorer"
+}

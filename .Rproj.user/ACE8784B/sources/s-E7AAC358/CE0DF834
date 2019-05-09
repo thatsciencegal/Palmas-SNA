@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1547520815079.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "CE0DF834",
+    "lastKnownWriteTime" : 13229796359077993,
+    "last_content_update" : 1547520815079,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "C20F3737",
+        "caption" : "dam.comm",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=dam.comm&cache_key=C20F3737",
+        "displayedObservations" : 54,
+        "environment" : "",
+        "object" : "dam.comm",
+        "preview" : 0,
+        "totalObservations" : 54,
+        "variables" : 1
+    },
+    "relative_order" : 8,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

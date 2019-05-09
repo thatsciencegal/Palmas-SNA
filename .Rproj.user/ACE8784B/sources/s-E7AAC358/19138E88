@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556061616974.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "19138E88",
+    "lastKnownWriteTime" : 3419473789575321445,
+    "last_content_update" : 1556061616974,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "B2D7AD85",
+        "caption" : "init.dat.boxplot",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=init.dat.boxplot&cache_key=B2D7AD85",
+        "displayedObservations" : "432",
+        "environment" : "",
+        "object" : "init.dat.boxplot",
+        "preview" : "0",
+        "totalObservations" : "432",
+        "variables" : "2"
+    },
+    "relative_order" : 22,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

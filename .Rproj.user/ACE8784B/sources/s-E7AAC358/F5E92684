@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1547519780035.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F5E92684",
+    "lastKnownWriteTime" : 3180141808686473843,
+    "last_content_update" : 1547519780035,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "16DD9D29",
+        "caption" : "nondam.comm",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=nondam.comm&cache_key=16DD9D29",
+        "displayedObservations" : 58,
+        "environment" : "",
+        "object" : "nondam.comm",
+        "preview" : 0,
+        "totalObservations" : 58,
+        "variables" : 61
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
